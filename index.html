@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工程预算管理系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#36D399',
+            warning: '#FFAB00',
+            danger: '#F87272',
+            neutral: '#3D4451',
+            'neutral-content': '#F2F2F2',
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      .table-hover-effect {
+        transition: background-color 0.2s ease;
+      }
+      .table-hover-effect:hover {
+        background-color: rgba(22, 93, 255, 0.05);
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-inter text-neutral min-h-screen flex flex-col">
+  <!-- 登录模态框 -->
+  <div id="loginModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+      <div class="text-center mb-6">
+        <i class="fa fa-calculator text-primary text-4xl mb-2"></i>
+        <h2 class="text-2xl font-bold text-neutral">工程预算管理系统</h2>
+        <p class="text-neutral/60">请登录以继续</p>
+      </div>
+      
+      <form id="loginForm">
+        <div class="mb-4">
+          <label for="username" class="block text-sm font-medium text-neutral mb-1">用户名</label>
+          <input type="text" id="username" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200">
+        </div>
+        
+        <div class="mb-6">
+          <label for="password" class="block text-sm font-medium text-neutral mb-1">密码</label>
+          <input type="password" id="password" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200">
+        </div>
+        
+        <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded-md transition-colors duration-200">
+          登录
+        </button>
+      </form>
+      
+      <div class="mt-4 text-sm text-neutral/60 text-center">
+        <p>测试账号：</p>
+        <p>管理员: admin / admin123</p>
+        <p>预算员: budgeter / budgeter123</p>
+        <p>项目经理: manager / manager123</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 顶部导航 -->
+  <header class="bg-white shadow-sm sticky top-0 z-40" style="display: none;" id="header">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-calculator text-primary text-2xl"></i>
+        <h1 class="text-xl font-bold text-primary">工程预算管理系统</h1>
+      </div>
+      
+      <!-- 导航栏已简化，移除不需要的菜单项 -->
+      
+      <div class="flex items-center space-x-4">
+        <div class="relative">
+          <button class="flex items-center space-x-2 text-neutral hover:text-primary transition-colors duration-200">
+            <img src="https://picsum.photos/id/1005/200/200" alt="用户头像" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+            <span class="hidden md:inline" id="currentUser">用户</span>
+            <i class="fa fa-angle-down"></i>
+          </button>
+        </div>
+        <button id="logoutBtn" class="text-neutral hover:text-primary transition-colors duration-200">
+          <i class="fa fa-sign-out"></i> 登出
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要内容区 -->
+  <main class="flex-grow container mx-auto px-4 py-6" style="display: none;" id="mainContent">
+    <div class="flex flex-col md:flex-row gap-6">
+      <!-- 侧边栏 -->
+      <aside class="md:w-64 shrink-0 hidden md:block">
+        <div class="bg-white rounded-lg shadow-sm p-4 h-fit sticky top-24">
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-neutral mb-3 flex items-center">
+              <i class="fa fa-list-ul text-primary mr-2"></i> 功能导航
+            </h3>
+            <ul class="space-y-1">
+              <li>
+                <a href="#" onclick="showPage('newBudget')" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary/10 text-primary" data-page="newBudget">
+                  <i class="fa fa-plus-circle mr-2"></i> 新建预算
+                </a>
+              </li>
+              <li>
+                <a href="#" onclick="showPage('budgetList')" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md text-neutral hover:bg-gray-50 transition-colors duration-200" data-page="budgetList">
+                  <i class="fa fa-list-alt mr-2"></i> 预算列表
+                </a>
+              </li>
+              <li>
+                <a href="#" onclick="showPage('pendingApproval')" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md text-neutral hover:bg-gray-50 transition-colors duration-200" data-page="pendingApproval">
+                  <i class="fa fa-clock-o mr-2"></i> 待审批
+                </a>
+              </li>
+              <li>
+                <a href="#" onclick="showPage('approved')" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md text-neutral hover:bg-gray-50 transition-colors duration-200" data-page="approved">
+                  <i class="fa fa-check-circle mr-2"></i> 已审批
+                </a>
+              </li>
+              <li>
+                <a href="#" onclick="showPage('budgetAdjustment')" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md text-neutral hover:bg-gray-50 transition-colors duration-200" data-page="budgetAdjustment">
+                  <i class="fa fa-refresh mr-2"></i> 预算调整
+                </a>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-lg font-semibold text-neutral mb-3 flex items-center">
+              <i class="fa fa-bar-chart text-primary mr-2"></i> 预算统计
+            </h3>
+            <div class="space-y-3">
+              <div class="bg-gray-50 rounded p-3">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-neutral/70">本月预算总额</span>
+                  <span class="font-medium">¥1,285,600</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-primary h-2 rounded-full" style="width: 75%"></div>
+                </div>
+              </div>
+              <div class="bg-gray-50 rounded p-3">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-neutral/70">已审批预算</span>
+                  <span class="font-medium">¥962,300</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-secondary h-2 rounded-full" style="width: 65%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+      
+      <!-- 主内容 -->
+      <div class="flex-grow">
+        <!-- 新建预算页面 -->
+        <div id="newBudgetPage" class="page-content">
+          <div class="bg-white rounded-lg shadow-sm p-6 mb-6 card-shadow">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-neutral mb-1">新建项目预算</h2>
+                <p class="text-neutral/60 text-sm">请填写以下信息创建新项目预算</p>
+              </div>
+              <div class="mt-4 md:mt-0">
+                <button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md transition-colors duration-200 flex items-center">
+                  <i class="fa fa-save mr-2"></i> 保存草稿
+                </button>
+              </div>
+            </div>
+          
+          <!-- 预算表单 -->
+          <form id="budgetForm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label for="project_id" class="block text-sm font-medium text-neutral mb-1">项目名称 <span class="text-danger">*</span></label>
+                <div class="relative">
+                  <input type="text" id="project_input" list="project_list" placeholder="请选择或输入项目名称" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200">
+                  <datalist id="project_list">
+                    <!-- 项目选项将通过JavaScript动态加载 -->
+                  </datalist>
+                  <input type="hidden" id="project_id" value="">
+                  <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <i class="fa fa-chevron-down text-gray-400"></i>
+                  </div>
+                </div>
+                <p class="text-xs text-neutral/60 mt-1">可以从下拉列表选择现有项目，或直接输入新项目名称</p>
+              </div>
+              
+              <div>
+                <label for="budget_code" class="block text-sm font-medium text-neutral mb-1">预算编号</label>
+                <input type="text" id="budget_code" value="BG-20250605-001" readonly class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-neutral/70">
+              </div>
+              
+              <div>
+                <label for="budget_date" class="block text-sm font-medium text-neutral mb-1">预算日期</label>
+                <input type="date" id="budget_date" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200">
+              </div>
+              
+              <div>
+                <label for="budgeter" class="block text-sm font-medium text-neutral mb-1">预算编制人</label>
+                <input type="text" id="budgeter" readonly class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md text-neutral/70">
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-neutral mb-3">预算明细</label>
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">序号</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">类型</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">项目名称</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">规格型号</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">单位</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">数量</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">单价 (¥)</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">金额 (¥)</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200" id="materialTableBody">
+                    <!-- 动态添加的行 -->
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mt-4 flex justify-end space-x-2">
+                <button type="button" id="addMaterialRow" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-md transition-colors duration-200 flex items-center">
+                  <i class="fa fa-plus mr-2"></i> 添加材料
+                </button>
+                <button type="button" id="addLaborRow" class="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-md transition-colors duration-200 flex items-center">
+                  <i class="fa fa-plus mr-2"></i> 添加人工
+                </button>
+                <button type="button" id="addEquipmentRow" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-4 py-2 rounded-md transition-colors duration-200 flex items-center">
+                  <i class="fa fa-plus mr-2"></i> 添加设备
+                </button>
+                <button type="button" id="addOtherRow" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2 rounded-md transition-colors duration-200 flex items-center">
+                  <i class="fa fa-plus mr-2"></i> 添加其他
+                </button>
+              </div>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+              <button type="button" class="px-6 py-2 border border-gray-300 rounded-md text-neutral hover:bg-gray-50 transition-colors duration-200">
+                取消
+              </button>
+              <button type="submit" class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-md transition-colors duration-200 flex items-center">
+                <i class="fa fa-check mr-2"></i> 提交预算
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- 预算概览卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div class="bg-white rounded-lg shadow-sm p-6 card-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-neutral font-medium">预算总额</h3>
+              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <i class="fa fa-calculator text-primary"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-bold text-neutral mb-1" id="totalAmount">¥0.00</div>
+            <div class="text-xs text-neutral/60">包含材料、人工、设备等费用</div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm p-6 card-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-neutral font-medium">材料费用</h3>
+              <div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
+                <i class="fa fa-cubes text-secondary"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-bold text-neutral mb-1" id="materialAmount">¥0.00</div>
+            <div class="text-xs text-neutral/60">占比 <span id="materialPercent">0%</span></div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm p-6 card-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-neutral font-medium">审批状态</h3>
+              <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
+                <i class="fa fa-hourglass-half text-warning"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-bold text-warning mb-1">待提交</div>
+            <div class="text-xs text-neutral/60">提交后将进入审批流程</div>
+          </div>
+        </div>
+
+          <!-- 图表分析 -->
+          <div class="bg-white rounded-lg shadow-sm p-6 card-shadow">
+            <h3 class="text-lg font-semibold text-neutral mb-4">预算构成分析</h3>
+            <div class="h-64">
+              <canvas id="budgetChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 预算列表页面 -->
+        <div id="budgetListPage" class="page-content" style="display: none;">
+          <div class="bg-white rounded-lg shadow-sm p-6 card-shadow">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-neutral mb-1">预算列表</h2>
+                <p class="text-neutral/60 text-sm">查看所有项目预算信息</p>
+              </div>
+              <div class="mt-4 md:mt-0">
+                <button onclick="showPage('newBudget')" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md transition-colors duration-200 flex items-center">
+                  <i class="fa fa-plus mr-2"></i> 新建预算
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">预算编号</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">项目名称</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">创建人</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">预算金额</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">状态</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">创建时间</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="budgetListTableBody" class="bg-white divide-y divide-gray-200">
+                  <!-- 动态加载的预算列表 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 待审批页面 -->
+        <div id="pendingApprovalPage" class="page-content" style="display: none;">
+          <div class="bg-white rounded-lg shadow-sm p-6 card-shadow">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-neutral mb-1">待审批预算</h2>
+                <p class="text-neutral/60 text-sm">需要审批的预算列表</p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">预算编号</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">项目名称</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">申请人</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">预算金额</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">提交时间</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingApprovalTableBody" class="bg-white divide-y divide-gray-200">
+                  <!-- 动态加载的待审批预算列表 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 已审批页面 -->
+        <div id="approvedPage" class="page-content" style="display: none;">
+          <div class="bg-white rounded-lg shadow-sm p-6 card-shadow">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-neutral mb-1">已审批预算</h2>
+                <p class="text-neutral/60 text-sm">已通过审批的预算列表</p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">预算编号</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">项目名称</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">申请人</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">预算金额</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">审批人</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">审批时间</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-neutral/70 uppercase tracking-wider">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="approvedTableBody" class="bg-white divide-y divide-gray-200">
+                  <!-- 动态加载的已审批预算列表 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 预算调整页面 -->
+        <div id="budgetAdjustmentPage" class="page-content" style="display: none;">
+          <div class="bg-white rounded-lg shadow-sm p-6 card-shadow">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-neutral mb-1">预算调整</h2>
+                <p class="text-neutral/60 text-sm">对已有预算进行调整和修改</p>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label for="adjustmentProjectSelect" class="block text-sm font-medium text-neutral mb-2">选择要调整的预算</label>
+              <select id="adjustmentProjectSelect" class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none">
+                <option value="">请选择预算</option>
+              </select>
+            </div>
+
+            <div id="adjustmentContent" style="display: none;">
+              <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+                <div class="flex">
+                  <i class="fa fa-exclamation-triangle text-yellow-600 mr-2 mt-1"></i>
+                  <div>
+                    <h4 class="text-yellow-800 font-medium">预算调整说明</h4>
+                    <p class="text-yellow-700 text-sm mt-1">预算调整将创建新的预算版本，原预算将保留作为历史记录。</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-center py-8">
+                <i class="fa fa-wrench text-gray-400 text-4xl mb-4"></i>
+                <p class="text-gray-500">预算调整功能开发中...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white border-t border-gray-200 py-6 mt-10" style="display: none;" id="footer">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-neutral/60 text-sm">&copy; 2025 工程预算管理系统. 保留所有权利.</p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="text-neutral/60 hover:text-primary transition-colors duration-200">
+            <i class="fa fa-question-circle mr-1"></i> 帮助中心
+          </a>
+          <a href="#" class="text-neutral/60 hover:text-primary transition-colors duration-200">
+            <i class="fa fa-file-text-o mr-1"></i> 使用文档
+          </a>
+          <a href="#" class="text-neutral/60 hover:text-primary transition-colors duration-200">
+            <i class="fa fa-phone mr-1"></i> 联系我们
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    // API基础URL
+    const API_BASE_URL = 'http://localhost:5001/api';
+
+    // 当前用户信息
+    let currentUser = null;
+
+    // 当前页面
+    let currentPage = 'newBudget';
+
+    // 初始化图表
+    const ctx = document.getElementById('budgetChart').getContext('2d');
+    const budgetChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['材料费用', '人工费用', '设备租赁', '其他费用'],
+        datasets: [{
+          data: [0, 0, 0, 0],
+          backgroundColor: [
+            '#165DFF',
+            '#36D399',
+            '#FFAB00',
+            '#9333EA'
+          ],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+          }
+        },
+        cutout: '70%'
+      }
+    });
+
+    // 初始化材料行计数器
+    let rowCount = 0;
+
+    // 登录功能
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          currentUser = data.user;
+          document.getElementById('currentUser').textContent = currentUser.username;
+          document.getElementById('budgeter').value = currentUser.username;
+
+          // 隐藏登录模态框，显示主界面
+          document.getElementById('loginModal').style.display = 'none';
+          document.getElementById('header').style.display = 'block';
+          document.getElementById('mainContent').style.display = 'block';
+          document.getElementById('footer').style.display = 'block';
+
+          // 设置当前日期
+          document.getElementById('budget_date').value = new Date().toISOString().split('T')[0];
+
+          // 加载项目列表
+          loadProjects();
+
+          // 加载预算列表数据
+          loadBudgetList();
+
+          // 初始化添加一行材料
+          document.getElementById('addMaterialRow').click();
+
+          // 添加项目输入框事件监听器
+          const projectInput = document.getElementById('project_input');
+          const projectIdHidden = document.getElementById('project_id');
+
+          // 项目输入框变化时的处理
+          projectInput.addEventListener('input', function() {
+            const inputValue = this.value.trim();
+
+            // 查找匹配的项目
+            const matchedProject = projectsData.find(project => project.name === inputValue);
+
+            if (matchedProject) {
+              // 如果匹配到现有项目，设置项目ID
+              projectIdHidden.value = matchedProject.id;
+              console.log(`选择了现有项目: ${matchedProject.name} (ID: ${matchedProject.id})`);
+            } else {
+              // 如果没有匹配到，清空项目ID（表示这是新项目）
+              projectIdHidden.value = '';
+              console.log(`输入了新项目名称: ${inputValue}`);
+            }
+          });
+
+          // 项目输入框失去焦点时的处理
+          projectInput.addEventListener('blur', async function() {
+            const inputValue = this.value.trim();
+
+            if (inputValue && !projectIdHidden.value) {
+              // 如果输入了项目名称但没有匹配到现有项目，询问是否创建新项目
+              const shouldCreate = confirm(`项目"${inputValue}"不存在，是否创建新项目？`);
+              if (shouldCreate) {
+                const newProject = await createProject(inputValue);
+                if (newProject) {
+                  projectIdHidden.value = newProject.id;
+                }
+              } else {
+                // 用户取消创建，清空输入框
+                this.value = '';
+                projectIdHidden.value = '';
+              }
+            }
+          });
+        } else {
+          alert(data.message || '登录失败');
+        }
+      } catch (error) {
+        console.error('登录错误:', error);
+        alert('登录失败，请检查网络连接');
+      }
+    });
+
+    // 登出功能
+    document.getElementById('logoutBtn').addEventListener('click', async function() {
+      try {
+        await fetch(`${API_BASE_URL}/logout`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+
+        // 重置界面
+        currentUser = null;
+        document.getElementById('loginModal').style.display = 'flex';
+        document.getElementById('header').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('footer').style.display = 'none';
+
+        // 清空表单
+        document.getElementById('loginForm').reset();
+      } catch (error) {
+        console.error('登出错误:', error);
+      }
+    });
+
+    // 页面切换函数
+    function showPage(pageId) {
+      // 隐藏所有页面
+      const pages = document.querySelectorAll('.page-content');
+      pages.forEach(page => page.style.display = 'none');
+
+      // 显示目标页面
+      const targetPage = document.getElementById(pageId + 'Page');
+      if (targetPage) {
+        targetPage.style.display = 'block';
+        currentPage = pageId;
+
+        // 更新导航状态
+        updateNavigation(pageId);
+
+        // 根据页面加载相应数据
+        switch(pageId) {
+          case 'budgetList':
+            loadBudgetList();
+            break;
+          case 'pendingApproval':
+            loadPendingApproval();
+            break;
+          case 'approved':
+            loadApproved();
+            break;
+          case 'budgetAdjustment':
+            loadAdjustmentOptions();
+            break;
+        }
+      }
+    }
+
+    // 更新导航状态
+    function updateNavigation(activePageId) {
+      const navLinks = document.querySelectorAll('.nav-link');
+      navLinks.forEach(link => {
+        const pageId = link.getAttribute('data-page');
+        if (pageId === activePageId) {
+          link.className = 'nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary/10 text-primary';
+        } else {
+          link.className = 'nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md text-neutral hover:bg-gray-50 transition-colors duration-200';
+        }
+      });
+    }
+
+    // 存储项目数据
+    let projectsData = [];
+
+    // 加载项目列表
+    async function loadProjects() {
+      try {
+        console.log('开始加载项目列表...');
+        const response = await fetch(`${API_BASE_URL}/projects`, {
+          credentials: 'include'
+        });
+
+        if (response.status === 401) {
+          alert('登录已过期，请重新登录');
+          showLoginModal();
+          return;
+        }
+
+        if (response.ok) {
+          const projects = await response.json();
+          console.log('获取到的项目数据:', projects);
+
+          // 存储项目数据
+          projectsData = projects;
+
+          const projectDatalist = document.getElementById('project_list');
+
+          // 清空现有选项
+          projectDatalist.innerHTML = '';
+
+          if (projects.length === 0) {
+            // 没有项目时给出提示
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '暂无可选项目';
+            projectDatalist.appendChild(option);
+          } else {
+            // 添加项目选项到datalist
+            projects.forEach(project => {
+              const option = document.createElement('option');
+              option.value = project.name;
+              option.setAttribute('data-id', project.id);
+              projectDatalist.appendChild(option);
+              console.log(`添加项目选项: ${project.name} (ID: ${project.id})`);
+            });
+          }
+
+          console.log(`项目列表加载完成，共 ${projects.length} 个项目`);
+        } else {
+          // 其他错误
+          const errorText = await response.text();
+          alert('加载项目失败：' + errorText);
+        }
+      } catch (error) {
+        console.error('加载项目失败:', error);
+        alert('加载项目列表失败，请检查网络连接');
+      }
+    }
+
+    // 创建新项目
+    async function createProject(projectName) {
+      try {
+        console.log('创建新项目:', projectName);
+        const response = await fetch(`${API_BASE_URL}/projects`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            name: projectName,
+            start_date: new Date().toISOString().split('T')[0]
+          })
+        });
+
+        if (response.ok) {
+          const newProject = await response.json();
+          console.log('新项目创建成功:', newProject);
+
+          // 重新加载项目列表
+          await loadProjects();
+
+          // 自动选择新创建的项目
+          document.getElementById('project_input').value = newProject.name;
+          document.getElementById('project_id').value = newProject.id;
+
+          alert(`项目"${projectName}"创建成功！`);
+          return newProject;
+        } else {
+          const errorData = await response.json();
+          console.error('创建项目失败:', errorData);
+
+          // 如果是401错误，提示重新登录
+          if (response.status === 401) {
+            alert('登录已过期，请重新登录');
+            showLoginModal();
+          } else {
+            alert(errorData.message || '创建项目失败');
+          }
+          return null;
+        }
+      } catch (error) {
+        console.error('创建项目请求失败:', error);
+        alert('创建项目失败，请检查网络连接');
+        return null;
+      }
+    }
+
+    // 加载预算列表
+    async function loadBudgetList() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/budgets`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const budgets = await response.json();
+          const tableBody = document.getElementById('budgetListTableBody');
+
+          tableBody.innerHTML = '';
+
+          budgets.forEach(budget => {
+            const row = document.createElement('tr');
+            row.className = 'table-hover-effect';
+
+            const statusClass = getStatusClass(budget.status);
+            const statusText = getStatusText(budget.status);
+
+            row.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral">BG-${budget.id.toString().padStart(6, '0')}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${budget.project_name || '未知项目'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${budget.creator_name || '未知'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">¥${budget.total_amount.toFixed(2)}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${statusText}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${formatDate(budget.created_at)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+                <button onclick="viewBudgetDetails(${budget.id})" class="text-primary hover:text-primary/80 mr-2">
+                  <i class="fa fa-eye"></i> 查看
+                </button>
+                ${budget.status === '草稿' ? `<button onclick="editBudget(${budget.id})" class="text-secondary hover:text-secondary/80"><i class="fa fa-edit"></i> 编辑</button>` : ''}
+              </td>
+            `;
+
+            tableBody.appendChild(row);
+          });
+
+          if (budgets.length === 0) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-neutral/60">
+                  <i class="fa fa-inbox text-2xl mb-2 block"></i>
+                  暂无预算数据
+                </td>
+              </tr>
+            `;
+          }
+        }
+      } catch (error) {
+        console.error('加载预算列表失败:', error);
+      }
+    }
+
+    // 加载待审批预算
+    async function loadPendingApproval() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/budgets?status=待审批`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const budgets = await response.json();
+          const tableBody = document.getElementById('pendingApprovalTableBody');
+
+          tableBody.innerHTML = '';
+
+          budgets.forEach(budget => {
+            const row = document.createElement('tr');
+            row.className = 'table-hover-effect';
+
+            row.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral">BG-${budget.id.toString().padStart(6, '0')}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${budget.project_name || '未知项目'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${budget.creator_name || '未知'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">¥${budget.total_amount.toFixed(2)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${formatDate(budget.created_at)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+                <button onclick="viewBudgetDetails(${budget.id})" class="text-primary hover:text-primary/80 mr-2">
+                  <i class="fa fa-eye"></i> 查看
+                </button>
+                ${currentUser && currentUser.role === 'admin' ? `
+                  <button onclick="approveBudget(${budget.id})" class="text-secondary hover:text-secondary/80 mr-2">
+                    <i class="fa fa-check"></i> 通过
+                  </button>
+                  <button onclick="rejectBudget(${budget.id})" class="text-danger hover:text-danger/80">
+                    <i class="fa fa-times"></i> 驳回
+                  </button>
+                ` : ''}
+              </td>
+            `;
+
+            tableBody.appendChild(row);
+          });
+
+          if (budgets.length === 0) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="6" class="px-6 py-8 text-center text-neutral/60">
+                  <i class="fa fa-inbox text-2xl mb-2 block"></i>
+                  暂无待审批预算
+                </td>
+              </tr>
+            `;
+          }
+        }
+      } catch (error) {
+        console.error('加载待审批预算失败:', error);
+      }
+    }
+
+    // 加载已审批预算
+    async function loadApproved() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/budgets?status=已审批`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const budgets = await response.json();
+          const tableBody = document.getElementById('approvedTableBody');
+
+          tableBody.innerHTML = '';
+
+          budgets.forEach(budget => {
+            const row = document.createElement('tr');
+            row.className = 'table-hover-effect';
+
+            row.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral">BG-${budget.id.toString().padStart(6, '0')}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${budget.project_name || '未知项目'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${budget.creator_name || '未知'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">¥${budget.total_amount.toFixed(2)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${budget.approver_name || '系统'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">${formatDate(budget.approved_at || budget.created_at)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+                <button onclick="viewBudgetDetails(${budget.id})" class="text-primary hover:text-primary/80 mr-2">
+                  <i class="fa fa-eye"></i> 查看
+                </button>
+                <button onclick="exportBudget(${budget.id})" class="text-secondary hover:text-secondary/80">
+                  <i class="fa fa-download"></i> 导出
+                </button>
+              </td>
+            `;
+
+            tableBody.appendChild(row);
+          });
+
+          if (budgets.length === 0) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-neutral/60">
+                  <i class="fa fa-inbox text-2xl mb-2 block"></i>
+                  暂无已审批预算
+                </td>
+              </tr>
+            `;
+          }
+        }
+      } catch (error) {
+        console.error('加载已审批预算失败:', error);
+      }
+    }
+
+    // 加载预算调整选项
+    async function loadAdjustmentOptions() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/budgets?status=已审批`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const budgets = await response.json();
+          const select = document.getElementById('adjustmentProjectSelect');
+
+          select.innerHTML = '<option value="">请选择预算</option>';
+
+          budgets.forEach(budget => {
+            const option = document.createElement('option');
+            option.value = budget.id;
+            option.textContent = `${budget.project_name} - ¥${budget.total_amount.toFixed(2)}`;
+            select.appendChild(option);
+          });
+        }
+      } catch (error) {
+        console.error('加载预算调整选项失败:', error);
+      }
+    }
+
+    // 辅助函数
+    function getStatusClass(status) {
+      const statusClasses = {
+        '草稿': 'bg-gray-100 text-gray-800',
+        '待审批': 'bg-yellow-100 text-yellow-800',
+        '已审批': 'bg-green-100 text-green-800',
+        '已驳回': 'bg-red-100 text-red-800'
+      };
+      return statusClasses[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    function getStatusText(status) {
+      return status || '未知状态';
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '未知时间';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    // 预算操作函数
+    function viewBudgetDetails(budgetId) {
+      alert(`查看预算详情功能开发中... (预算ID: ${budgetId})`);
+    }
+
+    function editBudget(budgetId) {
+      alert(`编辑预算功能开发中... (预算ID: ${budgetId})`);
+    }
+
+    function approveBudget(budgetId) {
+      if (confirm('确认通过此预算？')) {
+        alert(`审批通过功能开发中... (预算ID: ${budgetId})`);
+      }
+    }
+
+    function rejectBudget(budgetId) {
+      const reason = prompt('请输入驳回原因：');
+      if (reason) {
+        alert(`审批驳回功能开发中... (预算ID: ${budgetId}, 原因: ${reason})`);
+      }
+    }
+
+    function exportBudget(budgetId) {
+      alert(`导出预算功能开发中... (预算ID: ${budgetId})`);
+    }
+
+    // 添加行的通用函数
+    function addRow(itemType, placeholder, units) {
+      rowCount++;
+
+      const tableBody = document.getElementById('materialTableBody');
+      const newRow = document.createElement('tr');
+      newRow.className = 'table-hover-effect';
+
+      const typeColors = {
+        '材料': 'bg-blue-50 text-blue-700',
+        '人工': 'bg-green-50 text-green-700',
+        '设备': 'bg-yellow-50 text-yellow-700',
+        '其他': 'bg-purple-50 text-purple-700'
+      };
+
+      const unitOptions = units.map(unit => `<option value="${unit}">${unit}</option>`).join('');
+
+      newRow.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+          ${rowCount}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="px-2 py-1 text-xs rounded-full ${typeColors[itemType]} item-type" data-type="${itemType}">${itemType}</span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <input type="text" placeholder="${placeholder}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200 item-name">
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <input type="text" placeholder="规格型号" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200 specification">
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200 unit-select">
+            ${unitOptions}
+          </select>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <input type="number" min="0" step="0.01" placeholder="数量" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200 quantity-input" oninput="calculateAmount(this)">
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <input type="number" min="0" step="0.01" placeholder="单价" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200 price-input" oninput="calculateAmount(this)">
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap font-medium text-primary amount-cell">
+          ¥0.00
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+          <button onclick="removeRow(this)" class="text-danger hover:text-danger/80 transition-colors duration-200">
+            <i class="fa fa-trash"></i>
+          </button>
+        </td>
+      `;
+
+      tableBody.appendChild(newRow);
+      updateChart();
+    }
+
+    // 添加不同类型的行
+    document.getElementById('addMaterialRow').addEventListener('click', function() {
+      addRow('材料', '材料名称', ['吨', '立方米', '平方米', '块', '米', '个', '千块']);
+    });
+
+    document.getElementById('addLaborRow').addEventListener('click', function() {
+      addRow('人工', '工种名称', ['人月', '人日', '人时', '项']);
+    });
+
+    document.getElementById('addEquipmentRow').addEventListener('click', function() {
+      addRow('设备', '设备名称', ['台月', '台日', '台时', '项']);
+    });
+
+    document.getElementById('addOtherRow').addEventListener('click', function() {
+      addRow('其他', '费用名称', ['项', '月', '次']);
+    });
+
+    // 计算金额
+    function calculateAmount(input) {
+      const row = input.closest('tr');
+      const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+      const price = parseFloat(row.querySelector('.price-input').value) || 0;
+      const amount = quantity * price;
+
+      row.querySelector('.amount-cell').textContent = `¥${amount.toFixed(2)}`;
+      updateTotal();
+      updateChart();
+    }
+
+    // 更新总计
+    function updateTotal() {
+      const amountCells = document.querySelectorAll('.amount-cell');
+      let total = 0;
+
+      amountCells.forEach(cell => {
+        const amount = parseFloat(cell.textContent.replace('¥', '')) || 0;
+        total += amount;
+      });
+
+      document.getElementById('totalAmount').textContent = `¥${total.toFixed(2)}`;
+      document.getElementById('materialAmount').textContent = `¥${total.toFixed(2)}`;
+      document.getElementById('materialPercent').textContent = total > 0 ? '100%' : '0%';
+    }
+
+    // 更新图表
+    function updateChart() {
+      const rows = document.querySelectorAll('#materialTableBody tr');
+      let materialTotal = 0, laborTotal = 0, equipmentTotal = 0, otherTotal = 0;
+
+      rows.forEach(row => {
+        const itemType = row.querySelector('.item-type')?.dataset.type || '材料';
+        const amount = parseFloat(row.querySelector('.amount-cell').textContent.replace('¥', '')) || 0;
+
+        switch(itemType) {
+          case '材料': materialTotal += amount; break;
+          case '人工': laborTotal += amount; break;
+          case '设备': equipmentTotal += amount; break;
+          case '其他': otherTotal += amount; break;
+        }
+      });
+
+      // 更新图表数据
+      budgetChart.data.datasets[0].data = [
+        materialTotal,   // 材料费用
+        laborTotal,      // 人工费用
+        equipmentTotal,  // 设备租赁
+        otherTotal       // 其他费用
+      ];
+
+      budgetChart.update();
+
+      // 更新材料费用显示
+      document.getElementById('materialAmount').textContent = `¥${materialTotal.toFixed(2)}`;
+      const total = materialTotal + laborTotal + equipmentTotal + otherTotal;
+      if (total > 0) {
+        document.getElementById('materialPercent').textContent = `${((materialTotal / total) * 100).toFixed(1)}%`;
+      }
+    }
+
+    // 移除行
+    function removeRow(button) {
+      const row = button.closest('tr');
+      row.remove();
+      updateTotal();
+      updateChart();
+      renumberRows();
+    }
+
+    // 重新编号
+    function renumberRows() {
+      const rows = document.querySelectorAll('#materialTableBody tr');
+      rows.forEach((row, index) => {
+        row.querySelector('td:first-child').textContent = index + 1;
+      });
+      rowCount = rows.length;
+    }
+
+    // 表单提交
+    document.getElementById('budgetForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      // 收集表单数据
+      const projectIdValue = document.getElementById('project_id').value;
+      const projectInputValue = document.getElementById('project_input').value.trim();
+
+      let projectId = null;
+
+      if (projectIdValue) {
+        // 如果有项目ID，直接使用
+        projectId = parseInt(projectIdValue);
+      } else if (projectInputValue) {
+        // 如果没有项目ID但有输入值，需要先创建项目
+        const newProject = await createProject(projectInputValue);
+        if (newProject) {
+          projectId = newProject.id;
+        } else {
+          return; // 创建项目失败，停止提交
+        }
+      }
+
+      const formData = {
+        project_id: projectId,
+        details: []
+      };
+
+      const rows = document.querySelectorAll('#materialTableBody tr');
+      rows.forEach(row => {
+        const itemType = row.querySelector('.item-type')?.dataset.type || '材料';
+        const itemName = row.querySelector('.item-name').value;
+        const specification = row.querySelector('.specification').value;
+        const unit = row.querySelector('.unit-select').value;
+        const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+        const price = parseFloat(row.querySelector('.price-input').value) || 0;
+
+        if (itemName && quantity > 0 && price > 0) {
+          formData.details.push({
+            item_type: itemType,
+            item_name: itemName,
+            material_name: itemName,  // 兼容旧字段
+            specification: specification,
+            unit: unit,
+            quantity: quantity,
+            unit_price: price
+          });
+        }
+      });
+
+      // 简单验证
+      if (!formData.project_id) {
+        alert('请选择或输入项目名称');
+        return;
+      }
+
+      if (formData.details.length === 0) {
+        alert('请添加至少一项材料');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/budgets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('预算已提交，等待审批');
+          // 重置表单
+          document.getElementById('budgetForm').reset();
+          document.getElementById('materialTableBody').innerHTML = '';
+          rowCount = 0;
+          updateTotal();
+          updateChart();
+          // 重新添加一行
+          document.getElementById('addMaterialRow').click();
+        } else {
+          alert(data.message || '提交失败');
+        }
+      } catch (error) {
+        console.error('提交错误:', error);
+        alert('提交失败，请检查网络连接');
+      }
+    });
+  </script>
+</body>
+</html>

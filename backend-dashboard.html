@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程预算管理系统 - 后端管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            height: 100vh;
+            background-color: #343a40;
+            color: white;
+            padding-top: 20px;
+            position: fixed;
+        }
+        .sidebar .nav-link {
+            color: #adb5bd;
+            padding: 10px 20px;
+        }
+        .sidebar .nav-link.active {
+            background-color: #495057;
+            color: white;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: #495057;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            width: calc(100% - 250px);
+        }
+        .navbar {
+            margin-left: 250px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .stats-card {
+            text-align: center;
+            padding: 20px;
+        }
+        .stats-card .bi {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar col-md-3 col-lg-2 d-md-block">
+        <div class="text-center mb-4">
+            <h3>预算管理系统</h3>
+            <p class="text-muted small">后端管理平台</p>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-target="dashboard-page"><i class="bi bi-speedometer2 me-2"></i>仪表盘</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-target="projects-page"><i class="bi bi-file-earmark-text me-2"></i>预算项目</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-target="customers-page"><i class="bi bi-people me-2"></i>客户管理</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-target="contractors-page"><i class="bi bi-building me-2"></i>施工单位</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-target="costs-page"><i class="bi bi-cash-coin me-2"></i>成本核算</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-target="reports-page"><i class="bi bi-bar-chart-line me-2"></i>统计报表</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-target="settings-page"><i class="bi bi-gear me-2"></i>系统设置</a>
+            </li>
+            <li class="nav-item mt-5">
+                <a class="nav-link text-danger" href="#"><i class="bi bi-box-arrow-right me-2"></i>退出登录</a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-bell me-1"></i>通知
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#">新预算申请待审批</a></li>
+                            <li><a class="dropdown-item" href="#">项目进度提醒</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">查看全部</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i>管理员
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#">个人资料</a></li>
+                            <li><a class="dropdown-item" href="#">修改密码</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">退出登录</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <div class="container-fluid">
+            <!-- 仪表盘页面 -->
+            <div id="dashboard-page" class="page-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2">仪表盘</h1>
+                    <div>
+                        <button class="btn btn-primary me-2"><i class="bi bi-plus-circle me-1"></i>新建预算</button>
+                        <button class="btn btn-outline-secondary"><i class="bi bi-download me-1"></i>导出报表</button>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <h3>24</h3>
+                            <p class="text-muted">活跃预算项目</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <i class="bi bi-check-circle"></i>
+                            <h3>18</h3>
+                            <p class="text-muted">已完成项目</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <i class="bi bi-clock"></i>
+                            <h3>6</h3>
+                            <p class="text-muted">进行中项目</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <i class="bi bi-alert-triangle"></i>
+                            <h3>2</h3>
+                            <p class="text-muted">需关注项目</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近项目表格 -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">最近预算项目</h5>
+                        <a href="#" class="text-primary small">查看全部</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>项目名称</th>
+                                        <th>客户</th>
+                                        <th>预算金额</th>
+                                        <th>状态</th>
+                                        <th>创建日期</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>商业办公楼建设</td>
+                                        <td>ABC地产</td>
+                                        <td>¥12,500,000</td>
+                                        <td><span class="badge bg-success">已完成</span></td>
+                                        <td>2023-05-15</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>住宅小区绿化工程</td>
+                                        <td>绿城集团</td>
+                                        <td>¥3,800,000</td>
+                                        <td><span class="badge bg-warning">进行中</span></td>
+                                        <td>2023-06-22</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>道路维修改造</td>
+                                        <td>市政工程处</td>
+                                        <td>¥5,200,000</td>
+                                        <td><span class="badge bg-warning">进行中</span></td>
+                                        <td>2023-07-05</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>学校教学楼扩建</td>
+                                        <td>市教育局</td>
+                                        <td>¥8,600,000</td>
+                                        <td><span class="badge bg-danger">需关注</span></td>
+                                        <td>2023-07-18</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预算项目页面 -->
+            <div id="projects-page" class="page-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h2">预算项目管理</h1>
+                        <button class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>新增预算项目</button>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>项目ID</th>
+                                            <th>项目名称</th>
+                                            <th>客户单位</th>
+                                            <th>预算金额</th>
+                                            <th>开始日期</th>
+                                            <th>预计结束</th>
+                                            <th>项目状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>XM-2023001</td>
+                                            <td>商业办公楼建设</td>
+                                            <td>ABC地产</td>
+                                            <td>¥12,500,000</td>
+                                            <td>2023-03-15</td>
+                                            <td>2023-12-30</td>
+                                            <td><span class="badge bg-success">已完成</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>XM-2023002</td>
+                                            <td>住宅小区绿化工程</td>
+                                            <td>绿城集团</td>
+                                            <td>¥3,800,000</td>
+                                            <td>2023-06-01</td>
+                                            <td>2023-09-30</td>
+                                            <td><span class="badge bg-warning">进行中</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>XM-2023003</td>
+                                            <td>道路维修改造</td>
+                                            <td>市政工程处</td>
+                                            <td>¥5,200,000</td>
+                                            <td>2023-07-10</td>
+                                            <td>2023-11-20</td>
+                                            <td><span class="badge bg-warning">进行中</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 客户管理页面 -->
+                <div id="customers-page" class="page-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h2">客户管理</h1>
+                        <button class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>新增客户</button>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>客户ID</th>
+                                            <th>客户名称</th>
+                                            <th>联系人</th>
+                                            <th>联系电话</th>
+                                            <th>电子邮箱</th>
+                                            <th>地址</th>
+                                            <th>合作状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>KH-001</td>
+                                            <td>ABC地产有限公司</td>
+                                            <td>张三</td>
+                                            <td>13800138000</td>
+                                            <td>zhangsan@abc.com</td>
+                                            <td>北京市朝阳区XX路XX号</td>
+                                            <td><span class="badge bg-success">正常</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>KH-002</td>
+                                            <td>绿城集团</td>
+                                            <td>李四</td>
+                                            <td>13900139000</td>
+                                            <td>lisi@greentown.com</td>
+                                            <td>上海市浦东新区XX路XX号</td>
+                                            <td><span class="badge bg-success">正常</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>KH-003</td>
+                                            <td>市政工程处</td>
+                                            <td>王五</td>
+                                            <td>13700137000</td>
+                                            <td>wangwu@shizheng.com</td>
+                                            <td>广州市天河区XX路XX号</td>
+                                            <td><span class="badge bg-warning">暂停</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 施工单位页面 -->
+                <div id="contractors-page" class="page-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h2">施工单位管理</h1>
+                        <button class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>新增施工单位</button>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>单位ID</th>
+                                            <th>单位名称</th>
+                                            <th>联系人</th>
+                                            <th>联系电话</th>
+                                            <th>资质等级</th>
+                                            <th>合作项目数</th>
+                                            <th>状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>SG-001</td>
+                                            <td>中建一局集团有限公司</td>
+                                            <td>赵六</td>
+                                            <td>13600136000</td>
+                                            <td>特级</td>
+                                            <td>5</td>
+                                            <td><span class="badge bg-success">正常</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>SG-002</td>
+                                            <td>中铁建设集团有限公司</td>
+                                            <td>孙七</td>
+                                            <td>13500135000</td>
+                                            <td>一级</td>
+                                            <td>3</td>
+                                            <td><span class="badge bg-success">正常</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成本核算页面 -->
+                <div id="costs-page" class="page-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h2">成本核算管理</h1>
+                        <div>
+                            <button class="btn btn-primary me-2"><i class="bi bi-plus-circle me-1"></i>新增核算</button>
+                            <button class="btn btn-outline-secondary"><i class="bi bi-download me-1"></i>导出数据</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">项目成本明细</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>核算ID</th>
+                                            <th>项目名称</th>
+                                            <th>预算金额</th>
+                                            <th>实际成本</th>
+                                            <th>节约/超支</th>
+                                            <th>核算日期</th>
+                                            <th>状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>HS-2023001</td>
+                                            <td>商业办公楼建设</td>
+                                            <td>¥12,500,000</td>
+                                            <td>¥12,300,000</td>
+                                            <td><span class="text-success">¥200,000</span></td>
+                                            <td>2023-05-20</td>
+                                            <td><span class="badge bg-success">已审核</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>HS-2023002</td>
+                                            <td>住宅小区绿化工程</td>
+                                            <td>¥3,800,000</td>
+                                            <td>¥3,650,000</td>
+                                            <td><span class="text-success">¥150,000</span></td>
+                                            <td>2023-07-05</td>
+                                            <td><span class="badge bg-primary">进行中</span></td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计报表页面 -->
+                <div id="reports-page" class="page-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h2">统计报表</h1>
+                        <div>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-secondary">月度</button>
+                                <button class="btn btn-secondary">季度</button>
+                                <button class="btn btn-outline-secondary">年度</button>
+                            </div>
+                            <button class="btn btn-primary ms-2"><i class="bi bi-download me-1"></i>导出报表</button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">项目类型分布</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div style="height: 300px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                        <p class="text-muted">[图表占位符：项目类型饼图]</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">预算执行情况</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div style="height: 300px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                        <p class="text-muted">[图表占位符：预算执行折线图]</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">项目成本分析</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="height: 400px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                <p class="text-muted">[图表占位符：项目成本柱状图]</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统设置页面 -->
+                <div id="settings-page" class="page-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h2">系统设置</h1>
+                        <button class="btn btn-primary"><i class="bi bi-save me-1"></i>保存设置</button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">基本设置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form>
+                                        <div class="mb-3">
+                                            <label for="systemName" class="form-label">系统名称</label>
+                                            <input type="text" class="form-control" id="systemName" value="工程预算管理系统">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="companyName" class="form-label">公司名称</label>
+                                            <input type="text" class="form-control" id="companyName" value="XX建筑工程有限公司">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="contactEmail" class="form-label">联系邮箱</label>
+                                            <input type="email" class="form-control" id="contactEmail" value="contact@example.com">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="contactPhone" class="form-label">联系电话</label>
+                                            <input type="tel" class="form-control" id="contactPhone" value="010-12345678">
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">安全设置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="enableCaptcha" checked>
+                                            <label class="form-check-label" for="enableCaptcha">启用登录验证码</label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="enableLog" checked>
+                                            <label class="form-check-label" for="enableLog">启用操作日志</label>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="passwordExpire" class="form-label">密码过期时间(天)</label>
+                                            <input type="number" class="form-control" id="passwordExpire" value="90" min="30" max="180">
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // 页面切换功能
+            document.addEventListener('DOMContentLoaded', function() {
+                // 获取所有导航链接和页面内容
+                const navLinks = document.querySelectorAll('.sidebar .nav-link');
+                const pageContents = document.querySelectorAll('.page-content');
+
+                // 为每个导航链接添加点击事件
+                navLinks.forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+
+                        // 移除所有导航链接的active类
+                        navLinks.forEach(l => l.classList.remove('active'));
+                        // 为当前点击的链接添加active类
+                        this.classList.add('active');
+
+                        // 获取目标页面ID
+                        const targetId = this.getAttribute('data-target');
+
+                        // 隐藏所有页面
+                        pageContents.forEach(page => {
+                            page.style.display = 'none';
+                        });
+
+                        // 显示目标页面
+                        if (targetId) {
+                            const targetPage = document.getElementById(targetId);
+                            if (targetPage) {
+                                targetPage.style.display = 'block';
+                            }
+                        }
+                    });
+                });
+            });
+        </script>
